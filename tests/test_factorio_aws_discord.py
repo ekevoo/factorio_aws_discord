@@ -2,13 +2,10 @@
 
 """Tests for `factorio_aws_discord` package."""
 
-
 import unittest
 
-from factorio_aws_discord import factorio_aws_discord
 
-
-class TestFactorio_aws_discord(unittest.TestCase):
+class TestFactorioAwsDiscord(unittest.TestCase):
     """Tests for `factorio_aws_discord` package."""
 
     def setUp(self):

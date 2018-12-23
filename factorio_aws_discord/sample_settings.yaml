@@ -1,0 +1,27 @@
+factorio:
+    download: https://factorio.com/get-download/0.16.51/headless/linux64
+    waits:
+        created: 20m
+        activated: 10m
+        emptied: 5m
+        archive: 2w
+aws:
+    region: ca-central-1
+    ec2:
+        class: c5.large
+        vpc: vpc-0123456789abcdef0
+        subnet: subnet-3456789abcdef0123
+    s3:
+        bucket: fad-worlds
+    tags:
+        Project: Factorio
+        Channel: $channel
+        WorldID: $wid
+discord:
+    client:
+        id: 321098765432109876
+        secret: JjKkLlMmNnOoPpQqRrSsTtUuVvWw-XxY
+        token: yZz123456789AaBbCcDdEeFf.GgHhIi.JjKkLlMmNnOoPpQqRrSsTtUuVvW
+    servers:
+        567890123456789012:
+            creator role: 741085296374108529
