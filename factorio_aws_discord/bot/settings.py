@@ -34,5 +34,13 @@ class Settings:
     def region(self) -> str:
         return self._i['aws']['s3']['region']
 
+    @property
+    def bot_token(self) -> str:
+        return self._i['discord']['client']['token']
+
+    @property
+    def root_member_names(self):
+        return self._i['discord']['root']
+
 
 settings = Settings()
