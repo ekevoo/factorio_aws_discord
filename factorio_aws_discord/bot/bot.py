@@ -2,23 +2,22 @@ import traceback
 from dataclasses import dataclass
 
 from discord import Message, Client, User
-from unsync import unsync
+from unsync import unsync, Unfuture
 
+from factorio_aws_discord.bot import commands
 from factorio_aws_discord.bot.settings import settings
-
-restart = True
 
 
 # noinspection PyBroadException
 @dataclass
-class MessageHandler:
+class ReceivedMessage:
     """ Short-lived class that handles one message. """
 
     def __init__(self, bot: 'Bot', message: Message):
         self.bot = bot
         self.msg = message
-        self.c: Client = bot.client
-        self.t: str = message.content.strip()
+        self.client: Client = bot.client
+        self.text: str = message.content.strip()
 
     @unsync
     async def handle(self):
@@ -29,45 +28,45 @@ class MessageHandler:
         if self.msg.channel.is_private:
             # Got message privately; only accept from root users
             if not is_root:
-                return await self._react('⛔')
+                return
         else:
             # Got message in a channel
-            if self.t.startswith(self.bot.mention):  # Mentions me
-                self.t = self.t[len(self.bot.mention):].strip()
-            else:  # Doesn't mention me
-                return  # This is where chat tunneling will reside
+            if self.text.startswith(self.bot.mention):
+                # Mentions me
+                self.text = self.text[len(self.bot.mention):].strip()
+            else:
+                # Doesn't mention me
+                return  # TODO: Chat tunneling
 
-        command, *arguments = self.t.split()
-        if is_root:
-            if command.startswith('!'):
+        if self.text.startswith('!'):
+            if is_root:
                 return await self._eval()
-            elif command == 'quit':
-                return await self.c.close()
-            elif command == 'restart':
-                global restart
-                restart = True
-                return await self.c.close()
+            else:
+                return await self.react('🛑')
+
+        await commands.dispatch(self, is_root)
 
     @unsync
-    async def _react(self, emoji):
-        await self.c.add_reaction(self.msg, emoji)
+    async def react(self, emoji):
+        await self.client.add_reaction(self.msg, emoji)
 
     @unsync
-    async def _respond(self, text):
-        await self.c.send_message(self.msg.channel, text)
+    async def respond(self, text):
+        future: Unfuture = self.client.send_message(self.msg.channel, text)
+        await future
 
     @unsync
     async def _eval(self):
         try:
-            expression = self.t[1:]
+            expression = self.text[1:]
             value = eval(expression, globals(), locals())
             if not isinstance(value, str):
                 value = repr(value)
-            _ = self._respond(value)
-            _ = self._react('✔')
+            _ = self.respond(value)
+            _ = self.react('✔')
         except Exception:
-            _ = self._respond(traceback.format_exc())
-            _ = self._react('❌')
+            _ = self.respond(traceback.format_exc())
+            _ = self.react('💥')
 
 
 class Bot:
@@ -76,6 +75,10 @@ class Bot:
         self.me: User = client.user
         self.mention: str = f'<@{self.me.id}>'
         print(f'We have logged in as {self.me}')
+
+    @unsync
+    async def quit(self):
+        await self.client.logout()
 
 
 @unsync
@@ -88,7 +91,7 @@ async def main():
 
         @client.event
         async def on_message(message: Message):
-            await MessageHandler(bot, message).handle()
+            await ReceivedMessage(bot, message).handle()
 
     try:
         await client.start(settings.bot_token)
@@ -97,6 +100,5 @@ async def main():
 
 
 if __name__ == '__main__':
-    while restart:
-        restart = False
-        main().result()
+    __future: Unfuture = main()
+    __future.result()
